@@ -1,6 +1,7 @@
 import typing
 from typeoverride.method_decorator import schema_override
 from typeoverride.decorator import f_schema_override
+from typeoverride.result import Result
 
 
 class Schema(typing.TypedDict):
@@ -8,8 +9,8 @@ class Schema(typing.TypedDict):
 
 
 @f_schema_override
-def func(arg: dict[str, typing.Any]) -> dict[str, typing.Any]:
-    return arg
+def func(arg: dict[str, typing.Any]) -> Result[dict[str, typing.Any]]:
+    return {"success": True, "value": arg}
 
 
 typing.reveal_type(func)
@@ -23,24 +24,24 @@ class Client:
         self.data = data
 
     @schema_override
-    def method(self) -> dict[str, typing.Any]:
+    def method(self) -> Result[dict[str, typing.Any]]:
         """
         my awesome docstring
         """
-        return self.data
+        return {"success": True, "value": self.data}
 
 
-client = Client({"value": 1})
+client = Client({"sucess": True, "value": 1})
 
 
 typing.reveal_type(client.method)
 typing.reveal_type(client.method())
 
-typing.reveal_type(client.method[Schema])
-typing.reveal_type(client.method[Schema]())
+typing.reveal_type(client.method[int])
+typing.reveal_type(client.method[int]())
 
 typing.reveal_type(Client.method)
 typing.reveal_type(Client.method(client))
 
-typing.reveal_type(Client.method[Schema])
-typing.reveal_type(Client.method[Schema](client))
+typing.reveal_type(Client.method[int])
+typing.reveal_type(Client.method[int](client))
