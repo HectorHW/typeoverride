@@ -14,12 +14,21 @@ class Client:
         return self.data
 
 
-client = Client(dict(value=1))
+client = Client({"value": 1})
 
 
 class Schema(typing.TypedDict):
     value: int
 
 
-plain_value = client.method()
-typed_value = client.method[Schema]()
+typing.reveal_type(client.method)
+typing.reveal_type(client.method())
+
+typing.reveal_type(client.method[Schema])
+typing.reveal_type(client.method[Schema]())
+
+typing.reveal_type(Client.method)
+typing.reveal_type(Client.method(client))
+
+typing.reveal_type(Client.method[Schema])
+typing.reveal_type(Client.method[Schema](client))

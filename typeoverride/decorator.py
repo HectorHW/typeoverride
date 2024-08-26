@@ -21,6 +21,19 @@ class TypedMethodBound(typing.Generic[SelfT, Params, OriginalReturnT, NewReturnT
         return typing.cast(NewReturnT, self.__inner(self.__instance, *args, **kwargs))
 
 
+class TypedMethod(typing.Generic[SelfT, Params, OriginalReturnT, NewReturnT]):
+    def __init__(
+        self, inner: typing.Callable[typing.Concatenate[SelfT, Params], OriginalReturnT]
+    ):
+        self.__inner = inner
+        functools.update_wrapper(self, inner)
+
+    def __call__(
+        self, self_v: SelfT, *args: Params.args, **kwargs: Params.kwargs
+    ) -> NewReturnT:
+        return typing.cast(NewReturnT, self.__inner(self_v, *args, **kwargs))
+
+
 class UntypedMethodBound(typing.Generic[SelfT, Params, OriginalReturnT]):
     def __init__(
         self,
@@ -60,6 +73,16 @@ class UntypedMethod(typing.Generic[SelfT, Params, OriginalReturnT]):
         if instance is not None:
             return UntypedMethodBound(instance, self.__inner)
         return self
+
+    def __getitem__(
+        self, typ: type[NewReturnT]
+    ) -> TypedMethod[SelfT, Params, OriginalReturnT, NewReturnT]:
+        return TypedMethod(self.__inner)
+
+    def __call__(
+        self, self_v: SelfT, *args: Params.args, **kwargs: Params.kwargs
+    ) -> OriginalReturnT:
+        return self.__inner(self_v, *args, **kwargs)
 
 
 def schema_override(
