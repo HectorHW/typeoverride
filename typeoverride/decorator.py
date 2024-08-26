@@ -1,68 +1,69 @@
 import typing
 import functools
 
-ReturnT = typing.TypeVar("ReturnT")
-Params = typing.ParamSpec("Params")
 SelfT = typing.TypeVar("SelfT")
+Params = typing.ParamSpec("Params")
+OriginalReturnT = typing.TypeVar("OriginalReturnT")
+NewReturnT = typing.TypeVar("NewReturnT")
 
 
-class TypedMethodBound(typing.Generic[SelfT, Params, ReturnT]):
+class TypedMethodBound(typing.Generic[SelfT, Params, OriginalReturnT, NewReturnT]):
     def __init__(
         self,
         instance,
-        inner: typing.Callable[typing.Concatenate[SelfT, Params], typing.Any],
+        inner: typing.Callable[typing.Concatenate[SelfT, Params], OriginalReturnT],
     ):
         self.__instance = instance
         self.__inner = inner
         functools.update_wrapper(self, inner)
 
-    def __call__(self, *args: Params.args, **kwargs: Params.kwargs) -> ReturnT:
-        return typing.cast(ReturnT, self.__inner(self.__instance, *args, **kwargs))
+    def __call__(self, *args: Params.args, **kwargs: Params.kwargs) -> NewReturnT:
+        return typing.cast(NewReturnT, self.__inner(self.__instance, *args, **kwargs))
 
 
-class UntypedMethodBound(typing.Generic[SelfT, Params]):
+class UntypedMethodBound(typing.Generic[SelfT, Params, OriginalReturnT]):
     def __init__(
         self,
         instance: typing.Any,
-        inner: typing.Callable[typing.Concatenate[SelfT, Params], typing.Any],
+        inner: typing.Callable[typing.Concatenate[SelfT, Params], OriginalReturnT],
     ):
         self.__instance = instance
         self.__inner = inner
         functools.update_wrapper(self, inner)
 
-    def __call__(self, *args: Params.args, **kwargs: Params.kwargs) -> typing.Any:
+    def __call__(self, *args: Params.args, **kwargs: Params.kwargs) -> OriginalReturnT:
         return self.__inner(self.__instance, *args, **kwargs)
 
     def __getitem__(
-        self, typ: type[ReturnT]
-    ) -> TypedMethodBound[SelfT, Params, ReturnT]:
+        self, typ: type[NewReturnT]
+    ) -> TypedMethodBound[SelfT, Params, OriginalReturnT, NewReturnT]:
         return TypedMethodBound(self.__instance, self.__inner)
 
 
-class UntypedMethod(typing.Generic[SelfT, Params]):
+class UntypedMethod(typing.Generic[SelfT, Params, OriginalReturnT]):
     def __init__(
-        self, inner: typing.Callable[typing.Concatenate[SelfT, Params], typing.Any]
+        self, inner: typing.Callable[typing.Concatenate[SelfT, Params], OriginalReturnT]
     ):
         self.__inner = inner
 
     @typing.overload
     def __get__(
         self, instance: SelfT, owner: type[SelfT]
-    ) -> UntypedMethodBound[SelfT, Params]: ...
+    ) -> UntypedMethodBound[SelfT, Params, OriginalReturnT]: ...
 
     @typing.overload
     def __get__(self, instance: None, owner: type[SelfT]) -> typing.Self: ...
 
     def __get__(
         self, instance: SelfT | None, owner: type[SelfT]
-    ) -> UntypedMethodBound[SelfT, Params] | typing.Self:
+    ) -> UntypedMethodBound[SelfT, Params, OriginalReturnT] | typing.Self:
         if instance is not None:
             return UntypedMethodBound(instance, self.__inner)
         return self
 
 
 def schema_override(
-    callable: typing.Callable[typing.Concatenate[SelfT, Params], typing.Any],
-) -> UntypedMethod[SelfT, Params]:
+    callable: typing.Callable[typing.Concatenate[SelfT, Params], OriginalReturnT],
+) -> UntypedMethod[SelfT, Params, OriginalReturnT]:
     wrapper = UntypedMethod(callable)
     return wrapper
