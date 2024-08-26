@@ -1,5 +1,21 @@
 import typing
-from typeoverride.decorator import schema_override
+from typeoverride.method_decorator import schema_override
+from typeoverride.decorator import f_schema_override
+
+
+class Schema(typing.TypedDict):
+    value: int
+
+
+@f_schema_override
+def func(arg: dict[str, typing.Any]) -> dict[str, typing.Any]:
+    return arg
+
+
+typing.reveal_type(func)
+typing.reveal_type(func({"value": 1}))
+typing.reveal_type(func[Schema])
+typing.reveal_type(func[Schema]({"value": 1}))
 
 
 class Client:
@@ -15,10 +31,6 @@ class Client:
 
 
 client = Client({"value": 1})
-
-
-class Schema(typing.TypedDict):
-    value: int
 
 
 typing.reveal_type(client.method)
